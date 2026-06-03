@@ -17,7 +17,6 @@ export default function Home() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      {/* Top Header */}
       <header style={{
         background: '#1a2c5b',
         padding: '0 28px',
@@ -31,7 +30,7 @@ export default function Home() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <img src={LOGO_AVICENNA} alt="Colégio Avicenna" style={{ height: 32, objectFit: 'contain' }} />
           <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.35)' }} />
-          <img src={LOGO_ARQUIMEDES} alt="Colégio Arquimedes" style={{ height: 22, objectFit: 'contain' }} />
+          <img src={LOGO_ARQUIMEDES} alt="Colégio Arquimedes" style={{ height: 32, objectFit: 'contain' }} />
         </div>
         <div style={{
           fontSize: 11,
@@ -44,7 +43,6 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Body */}
       <div style={{ display: 'flex', flex: 1 }}>
         <Sidebar tab={tab} setTab={setTab} />
         <main style={{ flex: 1, padding: '32px', overflowY: 'auto' }}>
