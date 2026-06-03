@@ -50,13 +50,13 @@ export default function TabConsulta() {
   const funcNome = funcionarios.find(f => f.id === selecionado)?.nome
 
   return (
-    <div className="fade-in" style={{ maxWidth: 900 }}>
+    <div className="fade-in" style={{ width: '100%' }}>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, color: 'var(--navy)' }}>Consulta do Funcionário</h1>
         <p style={{ color: 'var(--muted)', marginTop: 4, fontSize: 14 }}>Veja os valores a receber e o histórico de comissões.</p>
       </div>
 
-      {/* Seleção */}
+      {/* Seleção de funcionário */}
       <div className="card" style={{ padding: '20px 24px', marginBottom: 20 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 14 }}>
           Selecione seu nome
@@ -67,7 +67,7 @@ export default function TabConsulta() {
               key={f.id}
               onClick={() => setSelecionado(f.id)}
               style={{
-                padding: '10px 24px',
+                padding: '10px 28px',
                 borderRadius: 8,
                 border: selecionado === f.id ? 'none' : '1px solid var(--border)',
                 background: selecionado === f.id ? 'var(--accent)' : 'var(--surface)',
@@ -88,25 +88,26 @@ export default function TabConsulta() {
 
       {selecionado && (
         <>
-          {/* Resumo */}
+          {/* Cards resumo */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 20 }}>
-            <div className="card" style={{ padding: '16px 20px' }}>
-              <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.05em', marginBottom: 6 }}>Total Gerado</div>
-              <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700, color: 'var(--navy)' }}>{formatBRL(totalGeral)}</div>
+            <div className="card" style={{ padding: '18px 22px' }}>
+              <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.05em', marginBottom: 8 }}>Total Gerado</div>
+              <div style={{ fontSize: 24, fontFamily: 'var(--font-display)', fontWeight: 700, color: 'var(--navy)' }}>{formatBRL(totalGeral)}</div>
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>{pagamentos.length} comissões</div>
             </div>
-            <div className="card" style={{ padding: '16px 20px', borderTop: '3px solid var(--warning)' }}>
-              <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.05em', marginBottom: 6 }}>A Receber</div>
-              <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700, color: 'var(--warning)' }}>{formatBRL(totalPendente)}</div>
-              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{pagamentos.filter(p => p.status === 'pendente').length} pendentes</div>
+            <div className="card" style={{ padding: '18px 22px', borderTop: '3px solid var(--warning)' }}>
+              <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.05em', marginBottom: 8 }}>A Receber</div>
+              <div style={{ fontSize: 24, fontFamily: 'var(--font-display)', fontWeight: 700, color: 'var(--warning)' }}>{formatBRL(totalPendente)}</div>
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>{pagamentos.filter(p => p.status === 'pendente').length} pendentes</div>
             </div>
-            <div className="card" style={{ padding: '16px 20px', borderTop: '3px solid var(--success)' }}>
-              <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.05em', marginBottom: 6 }}>Já Recebido</div>
-              <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700, color: 'var(--success)' }}>{formatBRL(totalPago)}</div>
-              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{pagamentos.filter(p => p.status === 'pago').length} pagamentos</div>
+            <div className="card" style={{ padding: '18px 22px', borderTop: '3px solid var(--success)' }}>
+              <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.05em', marginBottom: 8 }}>Já Recebido</div>
+              <div style={{ fontSize: 24, fontFamily: 'var(--font-display)', fontWeight: 700, color: 'var(--success)' }}>{formatBRL(totalPago)}</div>
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>{pagamentos.filter(p => p.status === 'pago').length} pagamentos</div>
             </div>
           </div>
 
-          {/* Tabela histórico */}
+          {/* Tabela */}
           {loading ? (
             <div style={{ color: 'var(--muted)', textAlign: 'center', paddingTop: 40 }} className="pulse-soft">Carregando...</div>
           ) : pagamentos.length === 0 ? (
@@ -115,9 +116,9 @@ export default function TabConsulta() {
             </div>
           ) : (
             <div className="card" style={{ overflow: 'hidden' }}>
-              <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
                 <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: 'var(--navy)' }}>
-                  Histórico — {funcNome}
+                  Histórico de Comissões — {funcNome}
                 </h2>
               </div>
               <div style={{ overflowX: 'auto' }}>
