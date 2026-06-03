@@ -3,12 +3,23 @@
 import { useEffect, useState } from 'react'
 import { supabase, calcMultiplicador, formatBRL, type Unidade, type Funcionario, type Meta, type Comissao } from '@/lib/supabase'
 
+const FUNCIONARIOS = ['Juliana', 'Nathália', 'Vinícius', 'Lucas Lodi']
+
+const MESES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+]
+
+const ANO_ATUAL = new Date().getFullYear()
+const ANOS = [ANO_ATUAL - 1, ANO_ATUAL, ANO_ATUAL + 1]
+
 export default function TabRegistrar() {
   const [unidades, setUnidades] = useState<Unidade[]>([])
   const [form, setForm] = useState({
     unidade_id: '',
     meta: '<4%' as Meta,
-    data_vencimento: '',
+    mes_vencimento: String(new Date().getMonth() + 1).padStart(2, '0'),
+    ano_vencimento: String(ANO_ATUAL),
     data_batida: '',
     criado_por: '',
     observacao: '',
@@ -24,13 +35,17 @@ export default function TabRegistrar() {
     })
   }, [])
 
-  // Recalcula preview sempre que mudar dados relevantes
+  // Data de vencimento = dia 06 do mês/ano selecionado
+  function getDataVencimento() {
+    return `${form.ano_vencimento}-${form.mes_vencimento}-06`
+  }
+
   useEffect(() => {
-    if (!form.unidade_id || !form.data_vencimento || !form.data_batida) {
+    if (!form.unidade_id || !form.data_batida) {
       setPreview([])
       return
     }
-    const venc = new Date(form.data_vencimento)
+    const venc = new Date(getDataVencimento())
     const batida = new Date(form.data_batida)
     const dias = Math.round((batida.getTime() - venc.getTime()) / (1000 * 60 * 60 * 24))
     const mult = calcMultiplicador(dias)
@@ -48,27 +63,28 @@ export default function TabRegistrar() {
           final: Number((c.valor * mult).toFixed(2)),
         })))
       })
-  }, [form.unidade_id, form.meta, form.data_vencimento, form.data_batida])
+  }, [form.unidade_id, form.meta, form.mes_vencimento, form.ano_vencimento, form.data_batida])
 
   async function handleSubmit() {
     setErro('')
     setSucesso('')
-    if (!form.unidade_id || !form.data_vencimento || !form.data_batida) {
+    if (!form.unidade_id || !form.data_batida || !form.criado_por) {
       setErro('Preencha todos os campos obrigatórios.')
       return
     }
 
     setLoading(true)
     try {
-      // 1. Inserir meta_batida
+      const dataVencimento = getDataVencimento()
+
       const { data: mb, error: mbErr } = await supabase
         .from('metas_batidas')
         .insert({
           unidade_id: form.unidade_id,
           meta: form.meta,
-          data_vencimento: form.data_vencimento,
+          data_vencimento: dataVencimento,
           data_batida: form.data_batida,
-          criado_por: form.criado_por || null,
+          criado_por: form.criado_por,
           observacao: form.observacao || null,
         })
         .select()
@@ -76,7 +92,6 @@ export default function TabRegistrar() {
 
       if (mbErr) throw mbErr
 
-      // 2. Buscar comissões para essa unidade/meta
       const { data: comissoes, error: cErr } = await supabase
         .from('comissoes')
         .select('*')
@@ -85,12 +100,11 @@ export default function TabRegistrar() {
 
       if (cErr) throw cErr
 
-      const venc = new Date(form.data_vencimento)
+      const venc = new Date(dataVencimento)
       const batida = new Date(form.data_batida)
       const dias = Math.round((batida.getTime() - venc.getTime()) / (1000 * 60 * 60 * 24))
       const mult = calcMultiplicador(dias)
 
-      // 3. Inserir pagamentos para cada funcionário
       const pagamentos = (comissoes || []).map((c: Comissao) => ({
         funcionario_id: c.funcionario_id,
         meta_batida_id: mb.id,
@@ -103,7 +117,7 @@ export default function TabRegistrar() {
       if (pErr) throw pErr
 
       setSucesso(`Meta registrada com sucesso! ${pagamentos.length} pagamentos gerados.`)
-      setForm(f => ({ ...f, unidade_id: '', data_batida: '', observacao: '' }))
+      setForm(f => ({ ...f, unidade_id: '', data_batida: '', observacao: '', criado_por: '' }))
       setPreview([])
     } catch (e: unknown) {
       setErro('Erro ao registrar: ' + (e as Error).message)
@@ -112,10 +126,11 @@ export default function TabRegistrar() {
     }
   }
 
-  const dias = form.data_vencimento && form.data_batida
-    ? Math.round((new Date(form.data_batida).getTime() - new Date(form.data_vencimento).getTime()) / 86400000)
+  const dias = form.data_batida
+    ? Math.round((new Date(form.data_batida).getTime() - new Date(getDataVencimento()).getTime()) / 86400000)
     : null
   const mult = dias !== null ? calcMultiplicador(dias) : null
+  const mesLabel = MESES[parseInt(form.mes_vencimento) - 1]
 
   return (
     <div className="fade-in" style={{ maxWidth: 700 }}>
@@ -126,6 +141,7 @@ export default function TabRegistrar() {
 
       <div className="card" style={{ padding: 28 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+
           {/* Unidade */}
           <div style={{ gridColumn: '1 / -1' }}>
             <label>Unidade *</label>
@@ -147,20 +163,38 @@ export default function TabRegistrar() {
             </select>
           </div>
 
-          {/* Criado por */}
+          {/* Registrado por */}
           <div>
-            <label>Registrado por</label>
-            <input className="input" placeholder="Seu nome..." value={form.criado_por} onChange={e => setForm(f => ({ ...f, criado_por: e.target.value }))} />
+            <label>Registrado por *</label>
+            <select className="input" value={form.criado_por} onChange={e => setForm(f => ({ ...f, criado_por: e.target.value }))}>
+              <option value="">Selecione...</option>
+              {FUNCIONARIOS.map(f => (
+                <option key={f} value={f}>{f}</option>
+              ))}
+            </select>
           </div>
 
-          {/* Data vencimento */}
+          {/* Período de vencimento */}
           <div>
-            <label>Data de Vencimento (dia 20) *</label>
-            <input className="input" type="date" value={form.data_vencimento} onChange={e => setForm(f => ({ ...f, data_vencimento: e.target.value }))} />
+            <label>Mês de Vencimento *</label>
+            <select className="input" value={form.mes_vencimento} onChange={e => setForm(f => ({ ...f, mes_vencimento: e.target.value }))}>
+              {MESES.map((m, i) => (
+                <option key={m} value={String(i + 1).padStart(2, '0')}>{m}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label>Ano de Vencimento *</label>
+            <select className="input" value={form.ano_vencimento} onChange={e => setForm(f => ({ ...f, ano_vencimento: e.target.value }))}>
+              {ANOS.map(a => (
+                <option key={a} value={String(a)}>{a}</option>
+              ))}
+            </select>
           </div>
 
           {/* Data batida */}
-          <div>
+          <div style={{ gridColumn: '1 / -1' }}>
             <label>Data que a Meta foi Batida *</label>
             <input className="input" type="date" value={form.data_batida} onChange={e => setForm(f => ({ ...f, data_batida: e.target.value }))} />
           </div>
@@ -172,10 +206,17 @@ export default function TabRegistrar() {
           </div>
         </div>
 
+        {/* Info vencimento */}
+        {form.mes_vencimento && form.ano_vencimento && (
+          <div style={{ marginTop: 16, padding: '10px 14px', borderRadius: 8, background: 'rgba(79,142,247,0.08)', border: '1px solid rgba(79,142,247,0.2)', fontSize: 13, color: 'var(--muted)' }}>
+            📅 Vencimento considerado: <strong style={{ color: 'var(--text)' }}>dia 06 de {mesLabel} de {form.ano_vencimento}</strong>
+          </div>
+        )}
+
         {/* Multiplicador indicator */}
         {dias !== null && mult !== null && (
           <div style={{
-            marginTop: 20,
+            marginTop: 12,
             padding: '12px 16px',
             borderRadius: 8,
             background: dias <= 40 ? 'rgba(52,211,153,0.1)' : dias <= 60 ? 'rgba(79,142,247,0.1)' : dias <= 90 ? 'rgba(251,191,36,0.1)' : 'rgba(248,113,113,0.1)',
@@ -196,7 +237,7 @@ export default function TabRegistrar() {
           </div>
         )}
 
-        {/* Preview de pagamentos */}
+        {/* Preview */}
         {preview.length > 0 && (
           <div style={{ marginTop: 24 }}>
             <div style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>
@@ -208,9 +249,7 @@ export default function TabRegistrar() {
                   <div style={{ fontWeight: 500 }}>{p.funcionario}</div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--success)' }}>{formatBRL(p.final)}</div>
-                    {mult !== 1 && (
-                      <div style={{ fontSize: 11, color: 'var(--muted)' }}>Base: {formatBRL(p.base)}</div>
-                    )}
+                    {mult !== 1 && <div style={{ fontSize: 11, color: 'var(--muted)' }}>Base: {formatBRL(p.base)}</div>}
                   </div>
                 </div>
               ))}
@@ -224,7 +263,6 @@ export default function TabRegistrar() {
           </div>
         )}
 
-        {/* Feedback */}
         {sucesso && (
           <div style={{ marginTop: 16, padding: '12px 16px', borderRadius: 8, background: 'rgba(52,211,153,0.1)', border: '1px solid #34d39940', color: '#34d399', fontSize: 14 }}>
             ✅ {sucesso}
@@ -236,7 +274,7 @@ export default function TabRegistrar() {
           </div>
         )}
 
-        <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
+        <div style={{ marginTop: 24 }}>
           <button className="btn-primary" onClick={handleSubmit} disabled={loading}>
             {loading ? 'Registrando...' : '🎯 Registrar Meta e Gerar Comissões'}
           </button>
