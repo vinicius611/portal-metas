@@ -3,19 +3,21 @@
 import { useEffect, useState } from 'react'
 import { supabase, formatBRL, type Funcionario } from '@/lib/supabase'
 
+interface MetaBatidaView {
+  meta: string
+  data_batida: string
+  data_vencimento: string
+  multiplicador: number
+  unidades: { nome: string; sigla: string }
+}
+
 interface PagView {
   id: string
   valor_base: number
   valor_com_multiplicador: number
   status: string
   data_pagamento: string | null
-  metas_batidas: {
-    meta: string
-    data_batida: string
-    data_vencimento: string
-    multiplicador: number
-    unidades: { nome: string; sigla: string }
-  }
+  metas_batidas: MetaBatidaView
 }
 
 export default function TabConsulta() {
@@ -55,7 +57,6 @@ export default function TabConsulta() {
         <p style={{ color: 'var(--muted)', marginTop: 4, fontSize: 14 }}>Veja os valores a receber e o histórico de comissões.</p>
       </div>
 
-      {/* Seleção */}
       <div className="card" style={{ padding: 28, marginBottom: 24 }}>
         <label>Selecione seu nome</label>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -84,7 +85,6 @@ export default function TabConsulta() {
 
       {selecionado && (
         <>
-          {/* Resumo */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
             <div className="card" style={{ padding: '18px 22px' }}>
               <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 500, marginBottom: 6 }}>Total Gerado</div>
@@ -102,7 +102,6 @@ export default function TabConsulta() {
             </div>
           </div>
 
-          {/* Histórico */}
           {loading ? (
             <div style={{ color: 'var(--muted)', textAlign: 'center', paddingTop: 40 }} className="pulse-soft">Carregando...</div>
           ) : pagamentos.length === 0 ? (
