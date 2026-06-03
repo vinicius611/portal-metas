@@ -37,7 +37,7 @@ export default function TabConsulta() {
       .eq('funcionario_id', selecionado)
       .order('created_at', { ascending: false })
       .then(({ data }) => {
-        setPagamentos((data || []) as PagView[])
+        setPagamentos((data || []) as unknown as PagView[])
         setLoading(false)
       })
   }, [selecionado])
