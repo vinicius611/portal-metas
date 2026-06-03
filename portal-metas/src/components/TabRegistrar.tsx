@@ -79,7 +79,6 @@ export default function TabRegistrar() {
 
   const dias = form.data_batida ? Math.round((new Date(form.data_batida).getTime() - new Date(getDataVencimento()).getTime()) / 86400000) : null
   const mult = dias !== null ? calcMultiplicador(dias) : null
-  const mesLabel = MESES[parseInt(form.mes_vencimento) - 1]
 
   return (
     <div className="fade-in" style={{ width: '100%' }}>
@@ -88,152 +87,114 @@ export default function TabRegistrar() {
         <p style={{ color: 'var(--muted)', marginTop: 4, fontSize: 14 }}>Informe a unidade e a meta atingida para gerar as comissões automaticamente.</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'start' }}>
+      <div className="card" style={{ padding: 32 }}>
+        {/* Linha 1: Unidade (full width) */}
+        <div style={{ marginBottom: 20 }}>
+          <label>Unidade *</label>
+          <select className="input" value={form.unidade_id} onChange={e => setForm(f => ({ ...f, unidade_id: e.target.value }))}>
+            <option value="">Selecione a unidade...</option>
+            {unidades.map(u => <option key={u.id} value={u.id}>{u.nome}</option>)}
+          </select>
+        </div>
 
-        {/* Formulário — coluna esquerda */}
-        <div className="card" style={{ padding: 28 }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: 'var(--navy)', marginBottom: 20 }}>Dados da Meta</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-            <div>
-              <label>Unidade *</label>
-              <select className="input" value={form.unidade_id} onChange={e => setForm(f => ({ ...f, unidade_id: e.target.value }))}>
-                <option value="">Selecione a unidade...</option>
-                {unidades.map(u => <option key={u.id} value={u.id}>{u.nome}</option>)}
-              </select>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div>
-                <label>Meta Atingida *</label>
-                <select className="input" value={form.meta} onChange={e => setForm(f => ({ ...f, meta: e.target.value as Meta }))}>
-                  <option value="<4%">Abaixo de 4% — Marco 1</option>
-                  <option value="<3%">Abaixo de 3% — Marco 2</option>
-                  <option value="<2%">Abaixo de 2% — Marco 3</option>
-                </select>
-              </div>
-              <div>
-                <label>Registrado por *</label>
-                <select className="input" value={form.criado_por} onChange={e => setForm(f => ({ ...f, criado_por: e.target.value }))}>
-                  <option value="">Selecione...</option>
-                  {FUNCIONARIOS.map(f => <option key={f} value={f}>{f}</option>)}
-                </select>
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div>
-                <label>Mês de Vencimento *</label>
-                <select className="input" value={form.mes_vencimento} onChange={e => setForm(f => ({ ...f, mes_vencimento: e.target.value }))}>
-                  {MESES.map((m, i) => <option key={m} value={String(i + 1).padStart(2, '0')}>{m}</option>)}
-                </select>
-              </div>
-              <div>
-                <label>Ano *</label>
-                <select className="input" value={form.ano_vencimento} onChange={e => setForm(f => ({ ...f, ano_vencimento: e.target.value }))}>
-                  {ANOS.map(a => <option key={a} value={String(a)}>{a}</option>)}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label>Data que a Meta foi Batida *</label>
-              <input className="input" type="date" value={form.data_batida} onChange={e => setForm(f => ({ ...f, data_batida: e.target.value }))} />
-            </div>
-
-            <div>
-              <label>Observação</label>
-              <textarea className="input" rows={3} placeholder="Notas adicionais..." value={form.observacao} onChange={e => setForm(f => ({ ...f, observacao: e.target.value }))} style={{ resize: 'vertical' }} />
-            </div>
-
-            {sucesso && <div style={{ padding: '12px 16px', borderRadius: 8, background: '#f0fdf4', border: '1px solid #86efac', color: '#15803d', fontSize: 14 }}>✅ {sucesso}</div>}
-            {erro && <div style={{ padding: '12px 16px', borderRadius: 8, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontSize: 14 }}>❌ {erro}</div>}
-
-            <button className="btn-primary" onClick={handleSubmit} disabled={loading} style={{ width: '100%', padding: '12px' }}>
-              {loading ? 'Registrando...' : '🎯 Registrar Meta e Gerar Comissões'}
-            </button>
+        {/* Linha 2: Meta + Registrado por */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
+          <div>
+            <label>Meta Atingida *</label>
+            <select className="input" value={form.meta} onChange={e => setForm(f => ({ ...f, meta: e.target.value as Meta }))}>
+              <option value="<4%">Abaixo de 4% — Marco 1</option>
+              <option value="<3%">Abaixo de 3% — Marco 2</option>
+              <option value="<2%">Abaixo de 2% — Marco 3</option>
+            </select>
+          </div>
+          <div>
+            <label>Registrado por *</label>
+            <select className="input" value={form.criado_por} onChange={e => setForm(f => ({ ...f, criado_por: e.target.value }))}>
+              <option value="">Selecione...</option>
+              {FUNCIONARIOS.map(f => <option key={f} value={f}>{f}</option>)}
+            </select>
           </div>
         </div>
 
-        {/* Painel direito */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-          {/* Info vencimento + multiplicador */}
-          <div className="card" style={{ padding: 20 }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: 'var(--navy)', marginBottom: 16 }}>Cálculo de Prazo</h2>
-
-            {form.mes_vencimento && (
-              <div style={{ padding: '10px 14px', borderRadius: 8, background: '#eff6ff', border: '1px solid #bfdbfe', fontSize: 13, color: '#1e40af', marginBottom: 12 }}>
-                📅 Vencimento: <strong>dia 06 de {mesLabel} de {form.ano_vencimento}</strong>
-              </div>
-            )}
-
-            {dias !== null && mult !== null ? (
-              <div style={{
-                padding: '14px 16px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 12,
-                background: dias <= 40 ? '#f0fdf4' : dias <= 60 ? '#eff6ff' : dias <= 90 ? '#fffbeb' : '#fef2f2',
-                border: `1px solid ${dias <= 40 ? '#86efac' : dias <= 60 ? '#bfdbfe' : dias <= 90 ? '#fde68a' : '#fecaca'}`,
-              }}>
-                <span style={{ fontSize: 24 }}>{dias <= 40 ? '🚀' : dias <= 60 ? '✅' : dias <= 90 ? '⚠️' : '🔻'}</span>
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{(mult * 100).toFixed(0)}% do valor</div>
-                  <div style={{ fontSize: 13, color: 'var(--muted)' }}>{dias} dias após vencimento</div>
-                  <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
-                    {dias <= 40 ? 'Bônus de 25%' : dias <= 60 ? 'Valor integral' : dias <= 90 ? 'Desconto de 30%' : 'Desconto de 50%'}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div style={{ padding: '14px 16px', borderRadius: 8, background: 'var(--surface2)', border: '1px solid var(--border)', fontSize: 13, color: 'var(--muted)', textAlign: 'center' }}>
-                Selecione a data batida para ver o multiplicador
-              </div>
-            )}
-
-            {/* Tabela de referência */}
-            <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {[
-                { label: 'Até 40 dias', mult: '125%', color: '#16a34a' },
-                { label: 'Até 60 dias', mult: '100%', color: '#2563eb' },
-                { label: 'Até 90 dias', mult: '70%',  color: '#d97706' },
-                { label: 'Acima de 90', mult: '50%',  color: '#dc2626' },
-              ].map(r => (
-                <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', borderRadius: 6, background: 'var(--surface2)', fontSize: 13 }}>
-                  <span style={{ color: 'var(--muted)' }}>{r.label}</span>
-                  <span style={{ fontWeight: 700, color: r.color }}>{r.mult}</span>
-                </div>
-              ))}
-            </div>
+        {/* Linha 3: Mês + Ano + Data batida */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20, marginBottom: 20 }}>
+          <div>
+            <label>Mês de Vencimento *</label>
+            <select className="input" value={form.mes_vencimento} onChange={e => setForm(f => ({ ...f, mes_vencimento: e.target.value }))}>
+              {MESES.map((m, i) => <option key={m} value={String(i + 1).padStart(2, '0')}>{m}</option>)}
+            </select>
           </div>
+          <div>
+            <label>Ano *</label>
+            <select className="input" value={form.ano_vencimento} onChange={e => setForm(f => ({ ...f, ano_vencimento: e.target.value }))}>
+              {ANOS.map(a => <option key={a} value={String(a)}>{a}</option>)}
+            </select>
+          </div>
+          <div>
+            <label>Data que a Meta foi Batida *</label>
+            <input className="input" type="date" value={form.data_batida} onChange={e => setForm(f => ({ ...f, data_batida: e.target.value }))} />
+          </div>
+        </div>
 
-          {/* Preview comissões */}
-          {preview.length > 0 && (
-            <div className="card" style={{ padding: 20 }}>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: 'var(--navy)', marginBottom: 14 }}>Preview de Comissões</h2>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                    {['Funcionário', 'Base', 'Final'].map(h => (
-                      <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {preview.map(p => (
-                    <tr key={p.funcionario} style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td style={{ padding: '10px', fontWeight: 500, fontSize: 14 }}>{p.funcionario}</td>
-                      <td style={{ padding: '10px', color: 'var(--muted)', fontSize: 13 }}>{formatBRL(p.base)}</td>
-                      <td style={{ padding: '10px', fontWeight: 700, color: 'var(--success)', fontSize: 14 }}>{formatBRL(p.final)}</td>
-                    </tr>
+        {/* Linha 4: Observação */}
+        <div style={{ marginBottom: 20 }}>
+          <label>Observação</label>
+          <textarea className="input" rows={2} placeholder="Notas adicionais..." value={form.observacao} onChange={e => setForm(f => ({ ...f, observacao: e.target.value }))} style={{ resize: 'vertical' }} />
+        </div>
+
+        {/* Multiplicador discreto */}
+        {dias !== null && mult !== null && (
+          <div style={{
+            marginBottom: 20, padding: '10px 16px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 10,
+            background: dias <= 40 ? '#f0fdf4' : dias <= 60 ? '#eff6ff' : dias <= 90 ? '#fffbeb' : '#fef2f2',
+            border: `1px solid ${dias <= 40 ? '#86efac' : dias <= 60 ? '#bfdbfe' : dias <= 90 ? '#fde68a' : '#fecaca'}`,
+            fontSize: 13,
+          }}>
+            <span>{dias <= 40 ? '🚀' : dias <= 60 ? '✅' : dias <= 90 ? '⚠️' : '🔻'}</span>
+            <span style={{ color: 'var(--text)' }}>
+              <strong>{dias} dias</strong> após vencimento →
+              Multiplicador <strong style={{ color: dias <= 40 ? '#16a34a' : dias <= 60 ? '#2563eb' : dias <= 90 ? '#d97706' : '#dc2626' }}>{(mult * 100).toFixed(0)}%</strong>
+            </span>
+          </div>
+        )}
+
+        {/* Preview de comissões */}
+        {preview.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
+              Preview de Comissões
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+              <thead>
+                <tr style={{ background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
+                  {['Funcionário', 'Valor Base', 'Valor Final'].map(h => (
+                    <th key={h} style={{ padding: '8px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase' }}>{h}</th>
                   ))}
-                  <tr style={{ background: '#eff6ff' }}>
-                    <td style={{ padding: '10px', fontWeight: 700, color: 'var(--accent)', fontSize: 14 }} colSpan={2}>Total</td>
-                    <td style={{ padding: '10px', fontWeight: 700, color: 'var(--accent)', fontSize: 15 }}>{formatBRL(preview.reduce((s, p) => s + p.final, 0))}</td>
+                </tr>
+              </thead>
+              <tbody>
+                {preview.map((p, i) => (
+                  <tr key={p.funcionario} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? '#fff' : 'var(--surface2)' }}>
+                    <td style={{ padding: '10px 16px', fontWeight: 500 }}>{p.funcionario}</td>
+                    <td style={{ padding: '10px 16px', color: 'var(--muted)' }}>{formatBRL(p.base)}</td>
+                    <td style={{ padding: '10px 16px', fontWeight: 700, color: 'var(--success)' }}>{formatBRL(p.final)}</td>
                   </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+                ))}
+                <tr style={{ background: '#eff6ff', borderTop: '2px solid var(--border)' }}>
+                  <td style={{ padding: '10px 16px', fontWeight: 700, color: 'var(--accent)' }} colSpan={2}>Total</td>
+                  <td style={{ padding: '10px 16px', fontWeight: 700, color: 'var(--accent)', fontSize: 15 }}>{formatBRL(preview.reduce((s, p) => s + p.final, 0))}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {sucesso && <div style={{ marginBottom: 16, padding: '12px 16px', borderRadius: 8, background: '#f0fdf4', border: '1px solid #86efac', color: '#15803d', fontSize: 14 }}>✅ {sucesso}</div>}
+        {erro && <div style={{ marginBottom: 16, padding: '12px 16px', borderRadius: 8, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontSize: 14 }}>❌ {erro}</div>}
+
+        <button className="btn-primary" onClick={handleSubmit} disabled={loading} style={{ padding: '12px 32px' }}>
+          {loading ? 'Registrando...' : '🎯 Registrar Meta e Gerar Comissões'}
+        </button>
       </div>
     </div>
   )
