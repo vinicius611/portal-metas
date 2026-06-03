@@ -7,17 +7,24 @@
 :root {
   --font-display: 'Syne', sans-serif;
   --font-body: 'DM Sans', sans-serif;
-  --bg: #0d0f14;
-  --surface: #151820;
-  --surface2: #1c2030;
-  --border: #252a3a;
-  --accent: #4f8ef7;
-  --accent2: #7c5cfc;
-  --success: #34d399;
-  --warning: #fbbf24;
-  --danger: #f87171;
-  --text: #e8eaf0;
-  --muted: #8891a8;
+  --bg: #f0f2f5;
+  --surface: #ffffff;
+  --surface2: #f5f7fa;
+  --border: #dde1ea;
+  --navy: #1a2c5b;
+  --navy2: #243670;
+  --accent: #2563eb;
+  --accent2: #1d4ed8;
+  --success: #16a34a;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --text: #1e2535;
+  --muted: #6b7280;
+  --sidebar-bg: #1a2c5b;
+  --sidebar-text: #e8edf8;
+  --sidebar-muted: #8fa3cc;
+  --sidebar-active: #2563eb;
+  --sidebar-hover: #243670;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -29,16 +36,15 @@ body {
   min-height: 100vh;
 }
 
-/* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-/* Custom classes */
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 
 .card2 {
@@ -59,7 +65,7 @@ body {
   cursor: pointer;
   transition: all 0.15s;
 }
-.btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.btn-primary:hover { background: var(--accent2); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
 .btn-primary:active { transform: translateY(0); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
@@ -78,7 +84,7 @@ body {
 .btn-secondary:hover { background: var(--surface2); }
 
 .input {
-  background: var(--surface2);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text);
@@ -89,32 +95,17 @@ body {
   transition: border-color 0.15s;
   outline: none;
 }
-.input:focus { border-color: var(--accent); }
-.input option { background: var(--surface2); }
+.input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+.input option { background: var(--surface); color: var(--text); }
 
 label {
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--muted);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   display: block;
   margin-bottom: 6px;
-}
-
-.tab-active {
-  background: var(--accent);
-  color: #fff;
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
 }
 
 @keyframes fadeIn {
