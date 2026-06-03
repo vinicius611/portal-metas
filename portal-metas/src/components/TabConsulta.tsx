@@ -58,10 +58,10 @@ export default function TabConsulta() {
 
       {/* Seleção de funcionário */}
       <div className="card" style={{ padding: '20px 24px', marginBottom: 20 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 14 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 14, textAlign: 'center' }}>
           Selecione seu nome
         </div>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
           {funcionarios.map(f => (
             <button
               key={f.id}
