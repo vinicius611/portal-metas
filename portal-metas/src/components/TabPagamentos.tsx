@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase, formatBRL, type Funcionario } from '@/lib/supabase'
+import { supabase, calcMultiplicador, formatBRL, type Funcionario, type Meta } from '@/lib/supabase'
 
 interface PagView {
   id: string
   funcionario_id: string
+  meta_batida_id: string
   valor_base: number
   valor_com_multiplicador: number
   status: string
@@ -16,6 +17,7 @@ interface PagView {
     data_batida: string
     data_vencimento: string
     multiplicador: number
+    observacao?: string | null
     unidades: { id: string; nome: string }
   }
 }
@@ -24,6 +26,15 @@ interface GrupoUnidade {
   unidade_id: string
   unidade_nome: string
   pagamentos: PagView[]
+}
+
+interface EdicaoState {
+  meta_batida_id: string
+  unidade_nome: string
+  meta: Meta
+  data_vencimento: string
+  data_batida: string
+  observacao: string
 }
 
 export default function TabPagamentos() {
@@ -35,10 +46,16 @@ export default function TabPagamentos() {
   const [salvando, setSalvando] = useState<string | null>(null)
   const [colapsados, setColapsados] = useState<Set<string>>(new Set())
 
+  // edição / exclusão de lançamentos
+  const [editando, setEditando] = useState<EdicaoState | null>(null)
+  const [salvandoEdicao, setSalvandoEdicao] = useState(false)
+  const [erroEdicao, setErroEdicao] = useState('')
+  const [excluindo, setExcluindo] = useState<string | null>(null)
+
   async function load() {
     const { data } = await supabase
       .from('pagamentos')
-      .select('*, funcionarios(*), metas_batidas(meta, data_batida, data_vencimento, multiplicador, unidades(id, nome))')
+      .select('*, funcionarios(*), metas_batidas(meta, data_batida, data_vencimento, multiplicador, observacao, unidades(id, nome))')
       .order('created_at', { ascending: false })
     setPagamentos((data || []) as unknown as PagView[])
     setLoading(false)
@@ -71,6 +88,94 @@ export default function TabPagamentos() {
     })
   }
 
+  // ---------- Edição de lançamento (meta batida) ----------
+  function abrirEdicao(p: PagView) {
+    setErroEdicao('')
+    setEditando({
+      meta_batida_id: p.meta_batida_id,
+      unidade_nome: p.metas_batidas?.unidades?.nome || '',
+      meta: (p.metas_batidas?.meta as Meta) || '<4%',
+      data_vencimento: p.metas_batidas?.data_vencimento || '',
+      data_batida: p.metas_batidas?.data_batida || '',
+      observacao: p.metas_batidas?.observacao || '',
+    })
+  }
+
+  function fecharEdicao() {
+    setEditando(null)
+    setErroEdicao('')
+  }
+
+  async function salvarEdicao() {
+    if (!editando) return
+    setErroEdicao('')
+    if (!editando.data_vencimento || !editando.data_batida) {
+      setErroEdicao('Preencha as duas datas.')
+      return
+    }
+    setSalvandoEdicao(true)
+    try {
+      // 1. Atualiza a meta batida
+      const { error: mbErr } = await supabase
+        .from('metas_batidas')
+        .update({
+          meta: editando.meta,
+          data_vencimento: editando.data_vencimento,
+          data_batida: editando.data_batida,
+          observacao: editando.observacao || null,
+        })
+        .eq('id', editando.meta_batida_id)
+      if (mbErr) throw mbErr
+
+      // 2. Recalcula o multiplicador com as novas datas
+      const dias = Math.round(
+        (new Date(editando.data_batida).getTime() - new Date(editando.data_vencimento).getTime()) / 86400000
+      )
+      const mult = calcMultiplicador(dias)
+
+      // 3. Atualiza o valor final de TODOS os pagamentos gerados por essa meta batida
+      const { data: pags, error: pErr } = await supabase
+        .from('pagamentos')
+        .select('id, valor_base')
+        .eq('meta_batida_id', editando.meta_batida_id)
+      if (pErr) throw pErr
+
+      for (const pg of pags || []) {
+        await supabase
+          .from('pagamentos')
+          .update({ valor_com_multiplicador: Number((Number(pg.valor_base) * mult).toFixed(2)) })
+          .eq('id', pg.id)
+      }
+
+      setEditando(null)
+      await load()
+    } catch (e: unknown) {
+      setErroEdicao('Erro ao salvar: ' + (e as Error).message)
+    } finally {
+      setSalvandoEdicao(false)
+    }
+  }
+
+  // ---------- Exclusão de lançamento (meta batida) ----------
+  async function excluirLancamento(meta_batida_id: string, unidade_nome: string, quantasComissoes: number) {
+    const ok = window.confirm(
+      `Excluir este lançamento da unidade "${unidade_nome}"?\n\n` +
+      `Isso vai remover ${quantasComissoes} comissão(ões) gerada(s) por ele (de todos os funcionários envolvidos).\n` +
+      `Essa alteração vale para todos os computadores e não pode ser desfeita.`
+    )
+    if (!ok) return
+    setExcluindo(meta_batida_id)
+    try {
+      const { error } = await supabase.from('metas_batidas').delete().eq('id', meta_batida_id)
+      if (error) throw error
+      await load()
+    } catch (e: unknown) {
+      alert('Erro ao excluir: ' + (e as Error).message)
+    } finally {
+      setExcluindo(null)
+    }
+  }
+
   const filtrados = pagamentos.filter(p => {
     if (filtroStatus !== 'todos' && p.status !== filtroStatus) return false
     if (filtroFunc && p.funcionario_id !== filtroFunc) return false
@@ -96,7 +201,7 @@ export default function TabPagamentos() {
     <div className="fade-in" style={{ width: '100%' }}>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, color: 'var(--navy)' }}>Gestão de Pagamentos</h1>
-        <p style={{ color: 'var(--muted)', marginTop: 4, fontSize: 14 }}>Marque os pagamentos como realizados e acompanhe o status por unidade.</p>
+        <p style={{ color: 'var(--muted)', marginTop: 4, fontSize: 14 }}>Marque os pagamentos como realizados, edite ou exclua lançamentos incorretos.</p>
       </div>
 
       {/* Filtros */}
@@ -198,7 +303,9 @@ export default function TabPagamentos() {
                         </tr>
                       </thead>
                       <tbody>
-                        {grupo.pagamentos.map((p, i) => (
+                        {grupo.pagamentos.map((p, i) => {
+                          const comissoesMesmaMeta = grupo.pagamentos.filter(x => x.meta_batida_id === p.meta_batida_id).length
+                          return (
                           <tr key={p.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? '#fff' : 'var(--surface2)' }}>
                             <td style={{ padding: '12px 16px', fontSize: 14, fontWeight: 600 }}>{p.funcionarios?.nome}</td>
                             <td style={{ padding: '12px 16px' }}>
@@ -227,20 +334,38 @@ export default function TabPagamentos() {
                               }}>{p.status === 'pago' ? '✓ Pago' : '⏳ Pendente'}</span>
                             </td>
                             <td style={{ padding: '12px 16px' }}>
-                              {p.status === 'pendente' ? (
-                                <button onClick={() => marcarPago(p.id)} disabled={salvando === p.id}
-                                  style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: '#16a34a', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: salvando === p.id ? 0.5 : 1, whiteSpace: 'nowrap' }}>
-                                  {salvando === p.id ? '...' : 'Marcar Pago'}
+                              <div style={{ display: 'flex', gap: 6, flexWrap: 'nowrap' }}>
+                                {p.status === 'pendente' ? (
+                                  <button onClick={() => marcarPago(p.id)} disabled={salvando === p.id}
+                                    style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: '#16a34a', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: salvando === p.id ? 0.5 : 1, whiteSpace: 'nowrap' }}>
+                                    {salvando === p.id ? '...' : 'Marcar Pago'}
+                                  </button>
+                                ) : (
+                                  <button onClick={() => marcarPendente(p.id)} disabled={salvando === p.id}
+                                    style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--muted)', fontSize: 12, cursor: 'pointer' }}>
+                                    Desfazer
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => abrirEdicao(p)}
+                                  title="Editar este lançamento (meta, datas)"
+                                  style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', background: '#fff', color: 'var(--text)', fontSize: 13, cursor: 'pointer' }}
+                                >
+                                  ✏️
                                 </button>
-                              ) : (
-                                <button onClick={() => marcarPendente(p.id)} disabled={salvando === p.id}
-                                  style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--muted)', fontSize: 12, cursor: 'pointer' }}>
-                                  Desfazer
+                                <button
+                                  onClick={() => excluirLancamento(p.meta_batida_id, grupo.unidade_nome, comissoesMesmaMeta)}
+                                  disabled={excluindo === p.meta_batida_id}
+                                  title="Excluir este lançamento (remove todas as comissões geradas por ele)"
+                                  style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #fecaca', background: '#fff', color: '#dc2626', fontSize: 13, cursor: 'pointer', opacity: excluindo === p.meta_batida_id ? 0.5 : 1 }}
+                                >
+                                  {excluindo === p.meta_batida_id ? '...' : '🗑️'}
                                 </button>
-                              )}
+                              </div>
                             </td>
                           </tr>
-                        ))}
+                          )
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -248,6 +373,99 @@ export default function TabPagamentos() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Modal de edição de lançamento */}
+      {editando && (
+        <div
+          onClick={fecharEdicao}
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 100,
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            className="card"
+            style={{ width: 460, maxWidth: '92vw', padding: 28 }}
+          >
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--navy)', marginBottom: 4 }}>
+              Editar Lançamento
+            </h2>
+            <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 20 }}>
+              Unidade: <strong>{editando.unidade_nome}</strong> — a alteração afeta todas as comissões geradas por esse lançamento, para todos os funcionários envolvidos.
+            </p>
+
+            <div style={{ marginBottom: 16 }}>
+              <label>Meta Atingida *</label>
+              <select
+                className="input"
+                value={editando.meta}
+                onChange={e => setEditando(ed => ed && { ...ed, meta: e.target.value as Meta })}
+              >
+                <option value="<4%">Abaixo de 4% — Marco 1</option>
+                <option value="<3%">Abaixo de 3% — Marco 2</option>
+                <option value="<2%">Abaixo de 2% — Marco 3</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+              <div>
+                <label>Data de Vencimento *</label>
+                <input
+                  className="input"
+                  type="date"
+                  value={editando.data_vencimento}
+                  onChange={e => setEditando(ed => ed && { ...ed, data_vencimento: e.target.value })}
+                />
+              </div>
+              <div>
+                <label>Data que a Meta foi Batida *</label>
+                <input
+                  className="input"
+                  type="date"
+                  value={editando.data_batida}
+                  onChange={e => setEditando(ed => ed && { ...ed, data_batida: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <label>Observação</label>
+              <textarea
+                className="input"
+                rows={2}
+                value={editando.observacao}
+                onChange={e => setEditando(ed => ed && { ...ed, observacao: e.target.value })}
+                style={{ resize: 'vertical' }}
+              />
+            </div>
+
+            {erroEdicao && (
+              <div style={{ marginBottom: 16, padding: '10px 14px', borderRadius: 8, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontSize: 13 }}>
+                ❌ {erroEdicao}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                onClick={fecharEdicao}
+                style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text)', fontSize: 14, cursor: 'pointer' }}
+              >
+                Cancelar
+              </button>
+              <button
+                className="btn-primary"
+                onClick={salvarEdicao}
+                disabled={salvandoEdicao}
+                style={{ padding: '10px 24px' }}
+              >
+                {salvandoEdicao ? 'Salvando...' : 'Salvar Alterações'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
