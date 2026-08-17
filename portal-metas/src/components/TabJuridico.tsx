@@ -158,7 +158,7 @@ function SubTabLancar() {
   }
 
   return (
-    <div className="card" style={{ padding: 32, maxWidth: 720 }}>
+    <div className="card" style={{ padding: 32 }}>
       <div style={{ marginBottom: 20 }}>
         <label>Unidade *</label>
         <select className="input" value={form.unidade_id} onChange={e => setForm(f => ({ ...f, unidade_id: e.target.value }))}>
@@ -167,7 +167,7 @@ function SubTabLancar() {
         </select>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20, marginBottom: 20 }}>
         <div>
           <label>Nome do Aluno / Contrato *</label>
           <input
@@ -230,7 +230,7 @@ function SubTabLancar() {
           <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
             Preview de Comissão (1% para cada)
           </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+          <table style={{ width: '100%', maxWidth: 500, borderCollapse: 'collapse', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
             <thead>
               <tr style={{ background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
                 {['Funcionário', 'Comissão (1%)'].map(h => (
