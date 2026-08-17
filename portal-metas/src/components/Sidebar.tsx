@@ -12,6 +12,7 @@ const items: { id: Tab; label: string; icon: string }[] = [
   { id: 'registrar',  label: 'Registrar Meta', icon: '🎯' },
   { id: 'pagamentos', label: 'Pagamentos',     icon: '💰' },
   { id: 'consulta',   label: 'Consultar',      icon: '🔍' },
+  { id: 'juridico',   label: 'Jurídico',       icon: '⚖️' },
 ]
 
 export default function Sidebar({ tab, setTab }: Props) {
