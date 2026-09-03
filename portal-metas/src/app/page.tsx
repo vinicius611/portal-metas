@@ -17,6 +17,7 @@ const LOGO_ARQUIMEDES = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAmUAAAEIC
 export default function Home() {
   const [tab, setTab] = useState<Tab>('dashboard')
   const [prefillRegistrar, setPrefillRegistrar] = useState<{ unidadeSigla: string; meta: string; dataBatida: string } | null>(null)
+  const [sidebarAberta, setSidebarAberta] = useState(true)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -31,6 +32,25 @@ export default function Home() {
         zIndex: 10,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <button
+            onClick={() => setSidebarAberta(a => !a)}
+            aria-label={sidebarAberta ? 'Esconder menu' : 'Mostrar menu'}
+            title={sidebarAberta ? 'Esconder menu' : 'Mostrar menu'}
+            style={{
+              background: 'rgba(255,255,255,0.08)',
+              border: 'none',
+              borderRadius: 8,
+              width: 34,
+              height: 34,
+              color: '#fff',
+              fontSize: 17,
+              cursor: 'pointer',
+              lineHeight: 1,
+              flexShrink: 0,
+            }}
+          >
+            ☰
+          </button>
           <img src={LOGO_AVICENNA} alt="Colégio Avicenna" style={{ height: 32, objectFit: 'contain' }} />
           <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.35)' }} />
           <img src={LOGO_ARQUIMEDES} alt="Colégio Arquimedes" style={{ height: 32, objectFit: 'contain' }} />
@@ -54,7 +74,7 @@ export default function Home() {
       />
 
       <div style={{ display: 'flex', flex: 1 }}>
-        <Sidebar tab={tab} setTab={setTab} />
+        <Sidebar tab={tab} setTab={setTab} aberta={sidebarAberta} />
         <main style={{ flex: 1, padding: '32px', overflowY: 'auto' }}>
           {tab === 'dashboard'  && <TabDashboard />}
           {tab === 'registrar'  && <TabRegistrar prefill={prefillRegistrar} />}
