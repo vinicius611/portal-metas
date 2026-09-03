@@ -7,6 +7,7 @@ import TabPagamentos from '@/components/TabPagamentos'
 import TabConsulta from '@/components/TabConsulta'
 import TabDashboard from '@/components/TabDashboard'
 import TabJuridico from '@/components/TabJuridico'
+import SinalizacoesBar from '@/components/SinalizacoesBar'
 
 export type Tab = 'dashboard' | 'registrar' | 'pagamentos' | 'consulta' | 'juridico'
 
@@ -15,6 +16,7 @@ const LOGO_ARQUIMEDES = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAmUAAAEIC
 
 export default function Home() {
   const [tab, setTab] = useState<Tab>('dashboard')
+  const [prefillRegistrar, setPrefillRegistrar] = useState<{ unidadeSigla: string; meta: string; dataBatida: string } | null>(null)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -44,11 +46,18 @@ export default function Home() {
         </div>
       </header>
 
+      <SinalizacoesBar
+        onRegistrar={(unidadeSigla, meta, dataBatida) => {
+          setPrefillRegistrar({ unidadeSigla, meta, dataBatida })
+          setTab('registrar')
+        }}
+      />
+
       <div style={{ display: 'flex', flex: 1 }}>
         <Sidebar tab={tab} setTab={setTab} />
         <main style={{ flex: 1, padding: '32px', overflowY: 'auto' }}>
           {tab === 'dashboard'  && <TabDashboard />}
-          {tab === 'registrar'  && <TabRegistrar />}
+          {tab === 'registrar'  && <TabRegistrar prefill={prefillRegistrar} />}
           {tab === 'pagamentos' && <TabPagamentos />}
           {tab === 'consulta'   && <TabConsulta />}
           {tab === 'juridico'   && <TabJuridico />}
