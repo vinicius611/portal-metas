@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase, calcMultiplicador, formatBRL, type Unidade, type Funcionario, type Meta, type Comissao } from '@/lib/supabase'
 
 const FUNCIONARIOS = ['Juliana', 'Nathália', 'Vinícius', 'Lucas Lodi']
@@ -8,8 +8,18 @@ const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Ag
 const ANO_ATUAL = new Date().getFullYear()
 const ANOS = [ANO_ATUAL - 1, ANO_ATUAL, ANO_ATUAL + 1]
 
-export default function TabRegistrar() {
+interface Props {
+  // Preenchido quando a pessoa vem de "Registrar agora" na barra de sinalizações
+  // (vindas do Portal de Cobrança). Só a unidade, a meta e a data batida vêm prontas —
+  // o mês/ano de vencimento continuam em branco de propósito, porque a sinalização
+  // não informa isso, e é ele que decide o multiplicador da comissão.
+  prefill?: { unidadeSigla: string; meta: string; dataBatida: string } | null
+}
+
+export default function TabRegistrar({ prefill }: Props) {
   const [unidades, setUnidades] = useState<Unidade[]>([])
+  const prefillApplied = useRef(false)
+  const [prefilledAgora, setPrefilledAgora] = useState(false)
   const [form, setForm] = useState({
     unidade_id: '',
     meta: '<4%' as Meta,
@@ -27,6 +37,15 @@ export default function TabRegistrar() {
   useEffect(() => {
     supabase.from('unidades').select('*').order('nome').then(({ data }) => setUnidades(data || []))
   }, [])
+
+  useEffect(() => {
+    if (!prefill || prefillApplied.current || unidades.length === 0) return
+    const u = unidades.find((x) => x.sigla === prefill.unidadeSigla)
+    if (!u) return
+    prefillApplied.current = true
+    setPrefilledAgora(true)
+    setForm((f) => ({ ...f, unidade_id: u.id, meta: prefill.meta as Meta, data_batida: prefill.dataBatida }))
+  }, [prefill, unidades])
 
   function getDataVencimento() {
     return `${form.ano_vencimento}-${form.mes_vencimento}-06`
@@ -86,6 +105,15 @@ export default function TabRegistrar() {
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, color: 'var(--navy)' }}>Registrar Meta Batida</h1>
         <p style={{ color: 'var(--muted)', marginTop: 4, fontSize: 14 }}>Informe a unidade e a meta atingida para gerar as comissões automaticamente.</p>
       </div>
+
+      {prefilledAgora && (
+        <div style={{
+          marginBottom: 20, padding: '12px 16px', borderRadius: 8,
+          background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: 13,
+        }}>
+          🚩 Unidade, meta e data preenchidas a partir de uma sinalização do Portal de Cobrança. Confira o <strong>mês/ano de vencimento</strong> abaixo antes de registrar — é isso que define o multiplicador.
+        </div>
+      )}
 
       <div className="card" style={{ padding: 32 }}>
         {/* Linha 1: Unidade (full width) */}
